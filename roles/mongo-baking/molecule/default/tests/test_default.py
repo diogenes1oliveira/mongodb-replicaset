@@ -31,10 +31,6 @@ def test_dhp_is_disabled(reboot, host):
         assert not file.exists or file.contains('[never]')
 
 
-def test_dbpath_exists(host):
-    assert host.file('/usr/db').exists
-
-
 def test_can_use_mongo(reboot, host):
     hash = str(uuid.uuid4())
 

@@ -47,11 +47,6 @@
         state: started
         enabled: true
 
-- name: Create the database directory
-  file:
-    path: "{{ dbpath }}"
-    state: directory
-
 - name: Mongoize at startup
   service:
     name: mongod

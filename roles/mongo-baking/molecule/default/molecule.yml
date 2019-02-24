@@ -8,7 +8,7 @@ driver:
 lint:
   name: yamllint
 platforms:
-  - name: instance
+  - name: mongodb-baking-instance
     box: centos/7
 provisioner:
   name: ansible

@@ -11,10 +11,10 @@ Currently, it only works on base systems that use the YUM package manager.
 Role Variables
 --------------
 
-**dbpath**: base path for Mongo directories. Defaults to `/usr/db`.
+None required.
 
-Example Playbook
-----------------
+How to use it
+-------------
 
 Install and prepare Mongo in the instances:
 
