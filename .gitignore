@@ -1,9 +1,13 @@
-#  Local .terraform directories
+# Local terraform directories and files
 **/.terraform/*
-
-# .tfstate files
 *.tfstate
 *.tfstate.*
-
-# .tfvars files
 *.tfvars
+
+# Python local files
+.python-version
+*.pyc
+pytestdebug.log
+
+# KDE creates these for some reason
+.directory

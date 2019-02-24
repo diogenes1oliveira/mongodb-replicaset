@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: Diógenes Oliveira
+  description: Bakes an AMI image with mongo pre-installed.
+  license: MIT
+  min_ansible_version: 2.4
+  galaxy_tags:
+    - mongo
+    - baking

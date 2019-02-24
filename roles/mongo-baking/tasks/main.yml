@@ -1,0 +1,59 @@
+---
+# tasks file for baker
+
+- name: Adding the mongodb repository
+  copy:
+    src: './mongodb.repo'
+    dest: '/etc/yum.repos.d/'
+    mode: 0644
+
+- name: Adding the extra repository to install pip
+  yum:
+    name: epel-release
+    state: present
+
+- name: Install MongoDB, pip and jq
+  yum:
+    name:
+      - mongodb-org
+      - python-pip
+      - jq
+    state: present
+
+- name: Install pymongo and pyopenssl
+  pip:
+    name:
+      - pymongo
+      - pyopenssl
+    state: present
+
+- name: Disable transparent huge pages
+  block:
+    - name: Copy the disabler script
+      copy:
+        src: 'disable-thp.sh'
+        dest: '/bin/disable-thp.sh'
+        mode: 0755
+
+    - name: Copy the service file
+      copy:
+        src: 'disable-thp.service'
+        dest: '/etc/systemd/system/disable-thp.service'
+        mode: 0755
+
+    - name: Enable the service
+      service:
+        name: disable-thp
+        state: started
+        enabled: true
+
+- name: Create the database directory
+  file:
+    path: "{{ dbpath }}"
+    state: directory
+
+- name: Mongoize at startup
+  service:
+    name: mongod
+    enabled: true
+    state: started

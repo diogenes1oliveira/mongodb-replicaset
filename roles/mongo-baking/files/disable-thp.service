@@ -1,0 +1,11 @@
+[Unit]
+Description=Disable Transparent Huge Pages (THP)
+Before=mongod.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/
+ExecStart=/bin/disable-thp.sh
+Restart=no
+RemainAfterExit=True
