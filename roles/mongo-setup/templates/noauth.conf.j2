@@ -7,11 +7,11 @@
 systemLog:
   destination: file
   logAppend: true
-  path: /var/log/mongodb/mongod.log
+  path: {{ dbpath }}/log/mongod.log
 
 # Where and how to store data.
 storage:
-  dbPath: /var/lib/mongo
+  dbPath: {{ dbpath }}/data
   journal:
     enabled: true
 #  engine:
@@ -21,14 +21,13 @@ storage:
 # how the process runs
 processManagement:
   fork: true  # fork and run in background
-  pidFilePath: /var/run/mongodb/mongod.pid  # location of pidfile
+  pidFilePath: {{ dbpath }}/mongod.pid  # location of pidfile
   timeZoneInfo: /usr/share/zoneinfo
 
 # network interfaces
 net:
-  port: 27020
+  port: {{ port_noauth }}
   bindIp: localhost
 
 security:
   authorization: disabled
-

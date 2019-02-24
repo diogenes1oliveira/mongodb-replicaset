@@ -6,3 +6,6 @@ arbiter_group: arbiter
 
 # Base path for MongoDB files and directories
 dbpath: '/var/mongodb-replicaset'
+
+# Bindig port when running in non-authenticated mode
+port_noauth: 27020

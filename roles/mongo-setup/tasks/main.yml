@@ -1,2 +1,5 @@
 ---
-# tasks file for mongo-setup
+- name: Assert admin_password is set
+  assert:
+    that:
+      - admin_password | default('', true) != ''

@@ -3,3 +3,4 @@
   hosts: all
   roles:
     - role: mongo-setup
+      admin_password: '12345678'

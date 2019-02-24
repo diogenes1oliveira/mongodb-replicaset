@@ -29,6 +29,9 @@ Role Variables
 
   # base path for MongoDB files
   dbpath: '/var/mongodb-replicaset'
+
+  # port to bind to when in noauth mode
+  port_noauth: 27020
 ```
 
 Dependencies
