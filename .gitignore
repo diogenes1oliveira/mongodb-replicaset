@@ -11,3 +11,6 @@ pytestdebug.log
 
 # KDE creates these for some reason
 .directory
+
+# ignore IDE directories
+.vscode
