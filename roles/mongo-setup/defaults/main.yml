@@ -1,0 +1,10 @@
+---
+# Sets the root username for MongoDB. This user has all possible permissions.
+admin_username: root
+
+# The password needs to be passed explicitly as a variable to the role,
+# otherwise there will be an assertion failure.
+admin_password: null
+
+# A falsey value will cause a standalone MongoDB instance to be deployed.
+replica_set: null
