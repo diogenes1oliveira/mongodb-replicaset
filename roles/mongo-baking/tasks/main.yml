@@ -47,6 +47,12 @@
         state: started
         enabled: true
 
+- name: Copy the initial configuration file
+  file:
+    src: 'mongod.conf'
+    dest: '/etc/mongod.conf'
+    mode: 0644
+
 - name: Mongoize at startup
   service:
     name: mongod
