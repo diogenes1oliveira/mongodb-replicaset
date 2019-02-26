@@ -12,15 +12,16 @@
     name: epel-release
     state: present
 
-- name: Install MongoDB, pip and jq
+- name: Install MongoDB and other essential programs
   yum:
     name:
       - mongodb-org
       - python-pip
       - jq
+      - policycoreutils-python
     state: present
 
-- name: Install pymongo and pyopenssl
+- name: Install pymongo
   pip:
     name:
       - pymongo
@@ -56,40 +57,7 @@
     owner: mongod
 
 - name: Assure mongod is started
-  block:
-    - name: Try to start the service
-      service:
-        name: mongod
-        enabled: true
-        state: started
-  rescue:
-    - name: Disable the service
-      service:
-        name: mongod
-        enabled: false
-        state: stopped
-
-    - name: Assure proper permissions
-      file:
-        path: "{{ item }}"
-        recurse: true
-        mode: 0755
-        group: mongod
-        owner: mongod
-      with_items:
-        - /var/log/mongodb/
-        - /var/lib/mongo/
-
-    - name: Remove temporary files
-      file:
-        path: "{{ item }}"
-        state: absent
-      with_items:
-        - /tmp/mongodb-27017.sock
-        - /var/run/mongodb/mongod.pid
-
-    - name: Try to start again
-      service:
-        name: mongod
-        enabled: true
-        state: started
+  service:
+    name: mongod
+    enabled: true
+    state: started
