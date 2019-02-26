@@ -7,4 +7,4 @@ admin_username: root
 admin_password: null
 
 # A falsey value will cause a standalone MongoDB instance to be deployed.
-replica_set: null
+replica_set: false

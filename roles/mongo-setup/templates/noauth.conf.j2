@@ -21,13 +21,15 @@ storage:
 # how the process runs
 processManagement:
   fork: true  # fork and run in background
-  pidFilePath: {{ dbpath }}/mongod.pid  # location of pidfile
+  pidFilePath: {{ dbpath }}/run/mongod.pid  # location of pidfile
   timeZoneInfo: /usr/share/zoneinfo
 
 # network interfaces
 net:
   port: {{ port_noauth }}
   bindIp: localhost
+  unixDomainSocket:
+    enabled: false
 
 security:
   authorization: disabled

@@ -1,0 +1,73 @@
+---
+
+- name: 'Assure proper policies for MongoDB resources'
+  include_tasks: policies.yml
+
+- name: Copy the authenticated configuration file
+  template:
+    src: standalone.conf.j2
+    dest: /etc/mongod.conf
+    group: mongod
+    owner: mongod
+    mode: 0644
+  notify:
+    - Restart MongoDB
+
+- name: Test if I can connect to mongo process
+  command: mongo --eval 'quit()'
+  register: test_connection_auth
+  changed_when: test_connection_auth.rc != 0
+  notify:
+    - Restart MongoDB
+
+- meta: flush_handlers
+
+- name: Test if the provided login/password work
+  shell: mongo
+  no_log: true
+  args:
+    stdin: |
+      use admin;
+      if(db.auth("{{ admin_username }}", "{{ admin_password }}-other")) {
+        quit(1);
+      }
+      if(!db.auth("{{ admin_username }}", "{{ admin_password }}")) {
+        quit(1);
+      }
+  register: login_result
+  ignore_errors: true
+  changed_when: login_result.rc != 0
+
+- name: Update the auth data
+  when: login_result.changed
+  block:
+    - name: Copy the no-auth configuration file
+      template:
+        src: noauth.conf.j2
+        dest: /etc/mongod.conf
+        group: mongod
+        owner: mongod
+        mode: 0644
+
+    - name: Enable the no-auth settings
+      include_tasks: restart-mongodb.yml
+
+    - name: Upsert the root user
+      no_log: true
+      mongodb_user:
+        login_port: "{{ port_noauth }}"
+        database: admin
+        roles: root
+        user: "{{ admin_username }}"
+        password: "{{ admin_password }}"
+
+    - name: Copy back the auth file
+      template:
+        src: standalone.conf.j2
+        dest: /etc/mongod.conf
+        group: mongod
+        owner: mongod
+        mode: 0644
+
+    - name: Re-enable authentication
+      include_tasks: restart-mongodb.yml

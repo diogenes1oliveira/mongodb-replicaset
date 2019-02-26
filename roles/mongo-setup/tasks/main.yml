@@ -1,5 +1,18 @@
 ---
 - name: Assert admin_password is set
+  no_log: true
   assert:
     that:
       - admin_password | default('', true) != ''
+
+- name: Apply standalone configuration
+  include_tasks: standalone.yml
+  when: not replica_set
+
+- name: Apply standalone configuration to the primary
+  include_tasks: standalone.yml
+  when: replica_set
+
+- name: Assure proper policies in the other instances
+  include_tasks: policies.yml
+  when: replica_set

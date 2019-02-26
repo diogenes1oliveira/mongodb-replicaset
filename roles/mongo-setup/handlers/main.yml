@@ -1,5 +1,4 @@
 ---
-- name: Restart mongod
-  service:
-    name: mongod
-    state: restarted
+
+- name: Restart MongoDB
+  import_tasks: restart-mongodb.yml
