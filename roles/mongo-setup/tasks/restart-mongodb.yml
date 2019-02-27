@@ -39,7 +39,7 @@
   changed_when: false
   register: current_config
 
-- name: 'Set current dbpath'
+- name: 'Set current port'
   set_fact:
     port_now: "{{ (current_config.stdout | from_yaml)['net']['port'] }}"
 
