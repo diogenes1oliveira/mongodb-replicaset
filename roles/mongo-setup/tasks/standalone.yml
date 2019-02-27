@@ -3,6 +3,15 @@
 - name: 'Assure proper policies for MongoDB resources'
   include_tasks: policies.yml
 
+- name: 'Get current config of MongoDB'
+  shell: cat /etc/mongod.conf
+  changed_when: false
+  register: current_config
+
+- name: 'Set current dbpath'
+  set_fact:
+    dbpath_before: "{{ (current_config.stdout | from_yaml)['storage']['dbPath'] }}"
+
 - name: Copy the authenticated configuration file
   template:
     src: standalone.conf.j2
@@ -13,9 +22,12 @@
   notify:
     - Restart MongoDB
 
+- meta: flush_handlers
+
 - name: Test if I can connect to mongo process
   command: mongo --eval 'quit()'
   register: test_connection_auth
+  ignore_errors: true
   changed_when: test_connection_auth.rc != 0
   notify:
     - Restart MongoDB
@@ -41,6 +53,15 @@
 - name: Update the auth data
   when: login_result.changed
   block:
+    - name: 'Get current config of MongoDB'
+      shell: cat /etc/mongod.conf
+      changed_when: false
+      register: current_config
+
+    - name: 'Set current dbpath'
+      set_fact:
+        dbpath_before: "{{ (current_config.stdout | from_yaml)['storage']['dbPath'] }}"
+
     - name: Copy the no-auth configuration file
       template:
         src: noauth.conf.j2
@@ -60,6 +81,15 @@
         roles: root
         user: "{{ admin_username }}"
         password: "{{ admin_password }}"
+
+    - name: 'Get current config of MongoDB'
+      shell: cat /etc/mongod.conf
+      changed_when: false
+      register: current_config
+
+    - name: 'Set current dbpath'
+      set_fact:
+        dbpath_before: "{{ (current_config.stdout | from_yaml)['storage']['dbPath'] }}"
 
     - name: Copy back the auth file
       template:

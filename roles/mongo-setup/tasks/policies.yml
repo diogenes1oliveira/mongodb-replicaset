@@ -20,8 +20,8 @@
     type_now=$(semanage port -l | grep tcp | grep "$port" | awk -F' ' '{print $1}')
     type_new=mongod_port_t
 
-    if [ $type_now != $type_new ]; then
-      semanage port -a -t $type_new -p tcp $port
+    if [ "$type_now" != "$type_new" ]; then
+      semanage port -a -t "$type_new" -p tcp $port
       echo 'Proper SELinux policies set'
     fi
 
@@ -34,7 +34,7 @@
     type_now=$(ls -dZ "$path" | awk '{print $4}' | awk -F':' '{print $3}')
     type_new={{ item.type }}
 
-    if [ $type_now != $type_new ]; then
+    if [ "$type_now" != "$type_new" ]; then
       semanage fcontext -a -t ${type_new} "${path}/.*"
       chcon -Rv -u system_u -t ${type_new} "${path}"
       echo 'Proper SELinux policies set'
@@ -49,3 +49,5 @@
       type: mongod_log_t
     - path: run
       type: mongod_var_run_t
+    - path: tmp
+      type: mongod_tmp_t

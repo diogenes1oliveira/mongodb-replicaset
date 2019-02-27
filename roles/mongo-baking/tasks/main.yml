@@ -57,7 +57,7 @@
     owner: mongod
 
 - name: Assure mongod is started
-  service:
+  systemd:
     name: mongod
     enabled: true
     state: started

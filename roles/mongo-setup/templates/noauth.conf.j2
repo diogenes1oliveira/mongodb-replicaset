@@ -20,9 +20,9 @@ storage:
 
 # how the process runs
 processManagement:
-  fork: true  # fork and run in background
+  fork: false  # fork and run in background
   pidFilePath: {{ dbpath }}/run/mongod.pid  # location of pidfile
-  timeZoneInfo: /usr/share/zoneinfo
+  #timeZoneInfo: /usr/share/zoneinfo
 
 # network interfaces
 net:
