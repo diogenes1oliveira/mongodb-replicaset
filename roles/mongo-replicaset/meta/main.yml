@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: Diógenes Oliveira
+  description: Sets up a MongoDB replica set.
+  license: MIT
+  min_ansible_version: 2.4
+  galaxy_tags:
+    - mongo
+    - setup

@@ -1,0 +1,38 @@
+# mongod.conf
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  path: {{ dbpath }}/log/mongod.log
+  traceAllExceptions: true
+  verbosity: 1
+
+# Where and how to store data.
+storage:
+  dbPath: {{ dbpath }}/data
+  journal:
+    enabled: true
+
+# how the process runs
+processManagement:
+  fork: false  # fork and run in background
+  pidFilePath: {{ dbpath }}/run/mongod.pid  # location of pidfile
+  timeZoneInfo: /usr/share/zoneinfo
+
+# network interfaces
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+  unixDomainSocket:
+    enabled: false
+
+security:
+  authorization: enabled
+  keyFile: "{{ dbpath }}/config/replicaset.key"
+
+replication:
+  replSetName: "{{ replica_set }}"
