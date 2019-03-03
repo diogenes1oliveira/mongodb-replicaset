@@ -1,0 +1,9 @@
+---
+- name: Assert admin_password is set
+  no_log: true
+  assert:
+    that:
+      - admin_password | default('', true) != ''
+
+- name: Apply standalone configuration
+  include_tasks: standalone.yml

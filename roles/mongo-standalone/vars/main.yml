@@ -1,0 +1,9 @@
+---
+# Base path for MongoDB files and directories
+dbpath: '/var/mongodb-rs'
+
+# Binding port when running in non-authenticated mode
+port_noauth: 27020
+
+# Most actions in the playbooks need to be run as root
+ansible_become: true
