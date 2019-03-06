@@ -3,8 +3,8 @@
 
 - name: Adding the mongodb repository
   copy:
-    src: './mongodb.repo'
-    dest: '/etc/yum.repos.d/'
+    src: ./mongodb.repo
+    dest: /etc/yum.repos.d/
     mode: 0644
 
 - name: Adding the extra repository to install pip
@@ -19,6 +19,7 @@
       - python-pip
       - jq
       - policycoreutils-python
+      - initscripts
     state: present
 
 - name: Install pymongo
@@ -32,14 +33,14 @@
   block:
     - name: Copy the disabler script
       copy:
-        src: 'disable-thp.sh'
-        dest: '/bin/disable-thp.sh'
+        src: disable-thp.sh
+        dest: /bin/disable-thp.sh
         mode: 0755
 
     - name: Copy the service file
       copy:
-        src: 'disable-thp.service'
-        dest: '/etc/systemd/system/disable-thp.service'
+        src: disable-thp.service
+        dest: /etc/systemd/system/disable-thp.service
         mode: 0755
 
     - name: Enable the service
@@ -50,8 +51,8 @@
 
 - name: Copy the initial configuration file
   copy:
-    src: 'mongod.conf'
-    dest: '/etc/mongod.conf'
+    src: mongod.conf
+    dest: /etc/mongod.conf
     mode: 0644
     group: mongod
     owner: mongod
