@@ -1,26 +1,41 @@
 ---
 dependency:
   name: galaxy
-
 driver:
-  name: vagrant
-  provider:
-    name: virtualbox
-
+  name: docker
 lint:
   name: yamllint
 platforms:
-  - name: instance
-    box: centos/7
-
+  - name: primary-instance
+    hostname: primary-instance
+    image: centos/systemd
+    networks:
+      - name: replica_network
+    purge_networks: true
+    privileged: true
+    volume_mounts:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    command: "/usr/sbin/init"
+    environment:
+      container: docker
+  - name: secondary-instance
+    hostname: secondary-instance
+    image: centos/systemd
+    networks:
+      - name: replica_network
+    purge_networks: true
+    privileged: true
+    volume_mounts:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    command: "/usr/sbin/init"
+    environment:
+      container: docker
 provisioner:
   name: ansible
   lint:
     name: ansible-lint
-
 scenario:
   name: default
-
 verifier:
   name: testinfra
   lint:
