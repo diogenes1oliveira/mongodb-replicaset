@@ -18,6 +18,7 @@
       - mongodb-org
       - python-pip
       - jq
+      - policycoreutils
       - policycoreutils-python
       - initscripts
     state: present
