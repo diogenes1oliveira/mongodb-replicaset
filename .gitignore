@@ -17,4 +17,8 @@ pytestdebug.log
 .directory
 
 # ignore IDE directories
-.vscode
+.vscode/
+.idea/
+
+# ignore environment variable files
+.envrc
