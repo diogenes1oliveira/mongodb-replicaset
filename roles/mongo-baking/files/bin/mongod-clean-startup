@@ -17,7 +17,7 @@ Parameters:
   -i, --interval   seconds to wait between retries (default: 2)
 
 Environment variables:
-  MONGOD_PORT      path to mongod's PID file path (default: as defined in /etc/mongod.conf or 27017)
+  MONGOD_PORT      port in which mongod is listening (default: as defined in /etc/mongod.conf or 27017)
 EOF
 }
 
