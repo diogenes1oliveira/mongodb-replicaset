@@ -1,5 +1,5 @@
 ---
-# tasks file for baker
+# main tasks file for the mongo-baking role
 
 - name: Adding the mongodb repository
   copy:
@@ -17,10 +17,10 @@
     name:
       - mongodb-org
       - python-pip
-      - jq
       - policycoreutils
       - policycoreutils-python
       - initscripts
+      - jq
     state: present
 
 - name: Install pymongo
@@ -28,27 +28,19 @@
     name:
       - pymongo
       - pyopenssl
+      - yq
     state: present
 
+- name: Install the executable scripts
+  copy:
+    src: ./files/bin/
+    dest: /usr/bin/
+    group: root
+    owner: root
+    mode: 0755
+
 - name: Disable transparent huge pages
-  block:
-    - name: Copy the disabler script
-      copy:
-        src: disable-thp.sh
-        dest: /bin/disable-thp.sh
-        mode: 0755
-
-    - name: Copy the service file
-      copy:
-        src: disable-thp.service
-        dest: /etc/systemd/system/disable-thp.service
-        mode: 0755
-
-    - name: Enable the service
-      service:
-        name: disable-thp
-        state: started
-        enabled: true
+  include_tasks: thp-disable.yml
 
 - name: Copy the initial configuration file
   copy:
