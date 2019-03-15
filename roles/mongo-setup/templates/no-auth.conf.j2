@@ -1,0 +1,35 @@
+# mongod.conf
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  path: "{{ dbpath }}/log/mongod.log"
+
+# Where and how to store data.
+storage:
+  dbPath: "{{ dbpath }}/data"
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: false  # fork and run in background
+  pidFilePath: "{{ dbpath }}/run/mongod.pid"
+  #timeZoneInfo: /usr/share/zoneinfo
+
+# network interfaces
+net:
+  port: "{{ port_noauth }}"
+  bindIp: localhost
+  unixDomainSocket:
+    enabled: false
+
+security:
+  authorization: disabled
