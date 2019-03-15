@@ -1,4 +1,0 @@
----
-
-- name: Restart MongoDB
-  import_tasks: restart-mongodb.yml
