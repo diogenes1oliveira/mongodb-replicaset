@@ -6,6 +6,6 @@ Before=mongod.service
 Type=oneshot
 User=root
 WorkingDirectory=/
-ExecStart=/bin/disable-thp.sh
+ExecStart=/usr/bin/thp-disable
 Restart=no
 RemainAfterExit=True

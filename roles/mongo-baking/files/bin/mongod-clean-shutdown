@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -e
+
+PROGRAM_NAME="$0"
+
+usage() {
+  cat <<EOF
+Cleanly shuts down the mongod server.
+Usage:
+  $PROGRAM_NAME [-v|--verbose] [-d|--dry-run]
+
+Parameters:
+  -v, --verbose    verbose mode
+  -d, --dry-run    takes no action, only shows the commands that would be executed
+
+Environment variables:
+  MONGOD_DATA_PATH     path to mongod's data directory path (default: as defined in /etc/mongod.conf)
+  MONGOD_PID_PATH      path to mongod's PID file path (default: as defined in /etc/mongod.conf)
+EOF
+}
+
+VERBOSE=false
+PREFIX=''
+
+main() {
+  get-paths
+  shutdown
+}
+
+get-paths() {
+  if [[ -z "$MONGOD_DATA_PATH" ]]; then
+    if [[ -f "/etc/mongod.conf" ]]; then
+      MONGOD_DATA_PATH=`cat /etc/mongod.conf | yq -r '.storage.dbPath'`
+    else
+      MONGOD_DATA_PATH="/var/lib/mongo"
+    fi
+  fi
+
+  if [[ -z "$MONGOD_PID_PATH" ]]; then
+    if [[ -f "/etc/mongod.conf" ]]; then
+      MONGOD_PID_PATH=`cat /etc/mongod.conf | yq -r '.processManagement.pidFilePath'`
+    else
+      MONGOD_PID_PATH="/var/run/mongodb/mongod.pid"
+    fi
+  fi
+}
+
+shutdown() {
+  if [[ "$VERBOSE" == true ]]; then
+    echo 'Sending the shutdown command to the mongod server'
+    $PREFIX mongod --shutdown --dbpath "$MONGOD_DATA_PATH"
+  else
+    $PREFIX mongod --quiet --shutdown --dbpath "$MONGOD_DATA_PATH"
+  fi
+
+  if [[ "$VERBOSE" == true ]]; then
+    echo 'Stopping the mongod service'
+    $PREFIX systemctl stop mongod
+  else
+    $PREFIX systemctl stop mongod
+  fi
+
+  if [[ "$VERBOSE" == true ]]; then
+    echo 'Removing the lock files'
+    $PREFIX rm --force --verbose "$MONGOD_DATA_PATH/mongod.lock" "$MONGOD_PID_PATH" 
+  else
+    $PREFIX rm --force "$MONGOD_DATA_PATH/mongod.lock" "$MONGOD_PID_PATH"
+  fi
+}
+
+if ! OPTS=`getopt -o dv --long dry-run,verbose -- "$@"`; then
+  echo "Failed to parse args." >&2
+  usage >&2
+  exit 1
+fi
+
+eval set -- "$OPTS"
+
+while true; do
+  case "$1" in
+    -h | --help     )  usage; exit 0; shift ;;
+    -v | --verbose  )  VERBOSE=true; shift ;;
+    -d | --dry-run  )  PREFIX=echo; shift ;;
+    -- ) shift; break ;;
+  esac
+done
+
+main

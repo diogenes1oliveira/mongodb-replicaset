@@ -1,0 +1,105 @@
+#!/bin/bash
+
+set -e
+
+PROGRAM_NAME="$0"
+
+usage() {
+  cat <<EOF
+Starts up the mongod service and wait for it to be up.
+Usage:
+  $PROGRAM_NAME [-v|--verbose] [-d|--dry-run] [-r|--retries=<n>] [-i|--interval=<seconds>]
+
+Parameters:
+  -v, --verbose    verbose mode
+  -d, --dry-run    takes no action, only shows the commands that would be executed
+  -r, --retries    max number of retries (default: 3)
+  -i, --interval   seconds to wait between retries (default: 2)
+
+Environment variables:
+  MONGOD_PORT      path to mongod's PID file path (default: as defined in /etc/mongod.conf or 27017)
+EOF
+}
+
+VERBOSE=false
+PREFIX=''
+RETRIES=3
+INTERVAL=2
+
+main() {
+  get-port
+  start
+  wait-for-up
+}
+
+get-port() {
+  if [[ -z "$MONGOD_PORT" ]]; then
+    if [[ -f "/etc/mongod.conf" ]]; then
+      MONGOD_PORT=`cat /etc/mongod.conf | yq -r '.net.port'`
+    else
+      MONGOD_PORT="27017"
+    fi
+  fi
+}
+
+start() {
+  if [[ "$VERBOSE" == true ]]; then
+    echo 'Starting the mongod service'
+    $PREFIX systemctl start mongod
+  else
+    $PREFIX systemctl start mongod
+  fi
+}
+
+wait-for-up() {
+  if [[ "$VERBOSE" == true ]]; then
+    echo 'Waiting for mongod to be up'
+  fi
+
+  i=1
+
+  while ! $PREFIX mongo --port "$MONGOD_PORT" --eval "quit()"; do
+    i=$((i+1))
+
+    if [[ "$i" -gt "$RETRIES" ]]; then
+      [[ "$VERBOSE" == false ]] || echo "Maximum retries reached" >&2
+      exit 1
+    fi
+
+    [[ "$VERBOSE" == false ]] || echo "Couldn't connect. Retry #$i in $INTERVAL seconds..."
+    sleep "$INTERVAL"
+  done
+  
+  if [[ "$VERBOSE" == true ]]; then
+    echo 'mongod started successfully.'
+  fi
+}
+
+if ! OPTS=`getopt -o dvri --long dry-run,verbose,retries,interval -- "$@"`; then
+  echo "Failed to parse args." >&2
+  usage >&2
+  exit 1
+fi
+
+eval set -- "$OPTS"
+
+while true; do
+  case "$1" in
+    -h | --help     )  usage; exit 0; shift ;;
+    -v | --verbose  )  VERBOSE=true; shift ;;
+    -d | --dry-run  )  PREFIX=echo; shift ;;
+    -r | --retries  )
+      shift
+      RETRIES="$1"
+      shift
+      ;;
+    -i | --interval  )
+      shift
+      INTERVAL="$1"
+      shift
+      ;;
+    -- ) shift; break ;;
+  esac
+done
+
+main
