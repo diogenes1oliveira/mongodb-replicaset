@@ -1,3 +1,5 @@
+# Service to disable THP at boot time
+
 [Unit]
 Description=Disable Transparent Huge Pages (THP)
 Before=mongod.service
@@ -6,6 +8,6 @@ Before=mongod.service
 Type=oneshot
 User=root
 WorkingDirectory=/
-ExecStart=/usr/bin/thp-disable
+ExecStart=/bin/sh -c "thp-disable"
 Restart=no
 RemainAfterExit=True

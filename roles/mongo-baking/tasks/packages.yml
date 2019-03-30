@@ -1,0 +1,31 @@
+---
+
+- name: Adding the mongodb repository
+  copy:
+    src: ./mongodb.repo
+    dest: /etc/yum.repos.d/
+    mode: 0644
+
+- name: Adding the extra repository to install pip
+  yum:
+    name: epel-release
+    state: present
+
+- name: Install the essential yum-based packages (including MongoDB itself)
+  yum:
+    name:
+      - mongodb-org
+      - python-pip
+      - policycoreutils
+      - policycoreutils-python
+      - initscripts
+      - jq
+    state: present
+
+- name: Install essential pip packages
+  pip:
+    name:
+      - pymongo
+      - pyopenssl
+      - yq
+    state: present

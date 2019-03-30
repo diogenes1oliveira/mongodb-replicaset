@@ -7,3 +7,7 @@ galaxy_info:
   galaxy_tags:
     - mongo
     - baking
+  platforms:
+    - name: CentOS
+      versions:
+        - 7

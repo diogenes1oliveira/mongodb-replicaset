@@ -90,7 +90,7 @@ get-primary-status() {
 EOF
   EXIT_CODE=$?
   set -e
-  
+
   if [[ "${EXIT_CODE}" == "${EXIT_CODE_FOR_PRIMARY}" ]]; then
     IS_PRIMARY=true
     return "${EXIT_CODE_FOR_PRIMARY}"

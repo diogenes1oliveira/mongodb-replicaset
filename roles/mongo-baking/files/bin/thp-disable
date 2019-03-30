@@ -1,41 +1,72 @@
 #!/bin/bash
-### BEGIN INIT INFO
-# Provides:          disable-transparent-hugepages
-# Required-Start:    $local_fs
-# Required-Stop:
-# X-Start-Before:    mongod mongodb-mms-automation-agent
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: Disable Linux transparent huge pages
-# Description:       Disable Linux transparent huge pages, to improve
-#                    database performance.
-### END INIT INFO
 
-case $1 in
-  start)
-    if [ -d /sys/kernel/mm/transparent_hugepage ]; then
-      thp_path=/sys/kernel/mm/transparent_hugepage
-    elif [ -d /sys/kernel/mm/redhat_transparent_hugepage ]; then
-      thp_path=/sys/kernel/mm/redhat_transparent_hugepage
+set -e
+
+PROGRAM_NAME="$0"
+
+usage() {
+    cat <<EOF
+Disables Transparent Huge Pages (THP) for the current session.
+
+Because such change doesn't persist through reboots, this script must be
+set as a system service to be run before mongod at every boot.
+
+Usage:
+    $PROGRAM_NAME [-d|--dry-run]
+
+Parameters:
+    -d, --dry-run       takes no action, only shows the commands that would
+                        be executed
+EOF
+}
+
+DRY_RUN_PREFIX=''
+
+main() {
+    if [[ -d "/sys/kernel/mm/transparent_hugepage" ]]; then
+        THP_PATH="/sys/kernel/mm/transparent_hugepage"
+    elif [[ -d "/sys/kernel/mm/redhat_transparent_hugepage" ]]; then
+        THP_PATH="/sys/kernel/mm/redhat_transparent_hugepage"
     else
-      return 0
+        exit 0
     fi
 
-    echo 'never' > ${thp_path}/enabled
-    echo 'never' > ${thp_path}/defrag
+    echo-to-file 'never' ${THP_PATH}/enabled
+    echo-to-file 'never' ${THP_PATH}/defrag
 
     re='^[0-1]+$'
-    if [[ $(cat ${thp_path}/khugepaged/defrag) =~ $re ]]
-    then
-      # RHEL 7
-      echo 0  > ${thp_path}/khugepaged/defrag
+    if [[ $(cat "${THP_PATH}/khugepaged/defrag") =~ $re ]]; then
+        # RHEL 7
+        echo-to-file 0  "${THP_PATH}/khugepaged/defrag"
     else
-      # RHEL 6
-      echo 'no' > ${thp_path}/khugepaged/defrag
+        # RHEL 6
+        echo-to-file 'no' "${THP_PATH}/khugepaged/defrag"
     fi
+}
 
-    unset re
-    unset thp_path
-    ;;
-esac
- 
+echo-to-file() {
+    # Easier dry-run capabilities this way
+    if [[ -z "$DRY_RUN_PREFIX" ]]; then
+        echo "$1" > "$2"
+    else
+        echo echo "$1" ">" "$2"
+    fi
+}
+
+if ! OPTS=`getopt -o d --long dry-run -- "$@"`; then
+    echo "Failed to parse args." >&2
+    usage >&2
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+while true; do
+    case "$1" in
+        -h | --help          )  usage; exit 0; shift ;;
+        -d | --dry-run       )  DRY_RUN_PREFIX=echo; shift ;;
+        -- ) shift; break ;;
+    esac
+done
+
+main

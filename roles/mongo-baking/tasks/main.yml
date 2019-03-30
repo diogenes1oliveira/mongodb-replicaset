@@ -1,35 +1,8 @@
 ---
 # main tasks file for the mongo-baking role
 
-- name: Adding the mongodb repository
-  copy:
-    src: ./mongodb.repo
-    dest: /etc/yum.repos.d/
-    mode: 0644
-
-- name: Adding the extra repository to install pip
-  yum:
-    name: epel-release
-    state: present
-
-- name: Install MongoDB and other essential programs
-  yum:
-    name:
-      - mongodb-org
-      - python-pip
-      - policycoreutils
-      - policycoreutils-python
-      - initscripts
-      - jq
-    state: present
-
-- name: Install pymongo
-  pip:
-    name:
-      - pymongo
-      - pyopenssl
-      - yq
-    state: present
+- name: Install the necessary packages
+  include_tasks: packages.yml
 
 - name: Install the executable scripts
   copy:
@@ -39,8 +12,10 @@
     owner: root
     mode: 0755
 
-- name: Disable transparent huge pages
-  include_tasks: thp-disable.yml
+- name: Back up the original configuration file
+  shell: cat /etc/mongod.conf > /etc/mongod.original.conf
+  args:
+    creates: /etc/mongod.original.conf
 
 - name: Copy the initial configuration file
   copy:
@@ -50,8 +25,5 @@
     group: mongod
     owner: mongod
 
-- name: Assure mongod is started
-  systemd:
-    name: mongod
-    enabled: true
-    state: started
+- name: Set up the services
+  include_tasks: services.yml

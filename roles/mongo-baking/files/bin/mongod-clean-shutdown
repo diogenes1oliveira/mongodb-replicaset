@@ -5,85 +5,163 @@ set -e
 PROGRAM_NAME="$0"
 
 usage() {
-  cat <<EOF
-Cleanly shuts down the mongod server.
+    cat <<EOF
+Cleanly shuts down a running mongod server.
+
+This script calls mongod --shutdown in the current database path, waits until
+it is actually down and then removes the lock files. Optionally, it can stop
+the mongod service as well.
+
+There must be a file with the configuration for the currently running server
+(default: /etc/mongod.current.conf). The mongod-save-current-config.conf systemd
+add-in hooks up to mongod's initialization to save such file after the service
+successfully boots up.
+
 Usage:
-  $PROGRAM_NAME [-v|--verbose] [-d|--dry-run]
+    $PROGRAM_NAME [-q] [-d] [-s] [-i=<seconds>] [-r<n>] [-c=<file>]
 
 Parameters:
-  -v, --verbose    verbose mode
-  -d, --dry-run    takes no action, only shows the commands that would be executed
-
-Environment variables:
-  MONGOD_DATA_PATH     path to mongod's data directory path (default: as defined in /etc/mongod.conf)
-  MONGOD_PID_PATH      path to mongod's PID file path (default: as defined in /etc/mongod.conf)
+    -q, --quiet         quiet mode
+    -d, --dry-run       takes no action, only shows the commands that would
+                        be executed
+    -s, --service       also shuts down the service
+    -i, --interval      seconds to wait between retries (default: 1)
+    -r, --retries       max number of retries (default: 3)
+    -c, --config-file   path to the config file of the currently running mongod
+                        server (default: /etc/mongod.current.conf)
 EOF
 }
 
-VERBOSE=false
-PREFIX=''
-
-main() {
-  get-paths
-  shutdown
+show-info() {
+    if [[ "$VERBOSE" == true ]]; then
+        echo '===== ' "$@" ' ===='
+    fi
 }
 
-get-paths() {
-  if [[ -z "$MONGOD_DATA_PATH" ]]; then
-    if [[ -f "/etc/mongod.conf" ]]; then
-      MONGOD_DATA_PATH=`cat /etc/mongod.conf | yq -r '.storage.dbPath'`
-    else
-      MONGOD_DATA_PATH="/var/lib/mongo"
-    fi
-  fi
+VERBOSE=true
+DRY_RUN_PREFIX=''
+STOP_SERVICE=false
+INTERVAL=1
+MAX_RETRIES=3
+CONFIG_FILE=/etc/mongod.current.conf
 
-  if [[ -z "$MONGOD_PID_PATH" ]]; then
-    if [[ -f "/etc/mongod.conf" ]]; then
-      MONGOD_PID_PATH=`cat /etc/mongod.conf | yq -r '.processManagement.pidFilePath'`
-    else
-      MONGOD_PID_PATH="/var/run/mongodb/mongod.pid"
+main() {
+    if [[ ! -f "$CONFIG_FILE" ]] && [[ -z "$DRY_RUN_PREFIX" ]]; then
+        echo "Couldn't find $CONFIG_FILE" >&2
+        exit 1
     fi
-  fi
+
+    if [[ "$VERBOSE" == true ]]; then
+        VERBOSE_FLAG='--verbose'
+        QUIET_FLAG=''
+    else
+        VERBOSE_FLAG=''
+        QUIET_FLAG='--quiet'
+    fi
+
+    get-var-values
+    shutdown
+}
+
+get-var-values() {
+    DATA_PATH=$(cat "${CONFIG_FILE}" | yq -r '.storage.dbPath')
+    PID_PATH=$(cat "${CONFIG_FILE}" | yq -r '.processManagement.pidFilePath')
+    PORT=$(cat "${CONFIG_FILE}" | yq -r '.net.port')
 }
 
 shutdown() {
-  if [[ "$VERBOSE" == true ]]; then
-    echo 'Sending the shutdown command to the mongod server'
-    $PREFIX mongod --shutdown --dbpath "$MONGOD_DATA_PATH"
-  else
-    $PREFIX mongod --quiet --shutdown --dbpath "$MONGOD_DATA_PATH"
-  fi
+    show-info 'Sending the shutdown command to the mongod server'
+    $DRY_RUN_PREFIX mongod $QUIET_FLAG --shutdown --dbpath "$DATA_PATH" || \
+        show-info 'The shutdown command has failed'
 
-  if [[ "$VERBOSE" == true ]]; then
-    echo 'Stopping the mongod service'
-    $PREFIX systemctl stop mongod
-  else
-    $PREFIX systemctl stop mongod
-  fi
+    show-info 'Waiting for mongod to stop'
+    wait-until-down
 
-  if [[ "$VERBOSE" == true ]]; then
-    echo 'Removing the lock files'
-    $PREFIX rm --force --verbose "$MONGOD_DATA_PATH/mongod.lock" "$MONGOD_PID_PATH" 
-  else
-    $PREFIX rm --force "$MONGOD_DATA_PATH/mongod.lock" "$MONGOD_PID_PATH"
-  fi
+    if [[ "$STOP_SERVICE" == true ]]; then
+        show-info 'Stopping the mongod service'
+        $DRY_RUN_PREFIX systemctl stop mongod
+    fi
+
+    show-info 'Removing the lock files'
+    $DRY_RUN_PREFIX rm --force $VERBOSE_FLAG \
+        "$DATA_PATH/mongod.lock" \
+        "$DATA_PATH/WiredTiger.lock" \
+        "$PID_PATH"
+
 }
 
-if ! OPTS=`getopt -o dv --long dry-run,verbose -- "$@"`; then
-  echo "Failed to parse args." >&2
-  usage >&2
-  exit 1
+mongo-check() {
+    show-info 'Checking if mongod is up'
+    if [[ ! -z "$DRY_RUN_PREFIX" ]]; then
+        $DRY_RUN_PREFIX mongo --port "$PORT" --eval "'quit()'"
+        return 1
+    else
+        $DRY_RUN_PREFIX mongo --port "$PORT" --eval 'quit()'
+    fi
+}
+
+wait-until-down() {
+    i=0
+
+    while mongo-check; do
+        show-info "mongod is still up," \
+            "checking again in $INTERVAL second(s)..."
+        i=$((i+1))
+
+        if [[ "$i" -gt "$MAX_RETRIES" ]]; then
+            echo "Couldn't shut mongod down after" \
+                "$i retries. Quitting" >&2
+            exit 1
+        fi
+
+        sleep "$INTERVAL"
+    done
+}
+
+OPTS=$(getopt \
+    -o hqdr:i:sc: \
+    --long help,quiet,dry-run,retries:,interval:,service,config-file: \
+    -- "$@")
+
+if [[ "$?" != 0 ]]; then
+    echo "Failed to parse args." >&2
+    usage >&2
+    exit 1
 fi
 
 eval set -- "$OPTS"
 
 while true; do
-  case "$1" in
-    -h | --help     )  usage; exit 0; shift ;;
-    -v | --verbose  )  VERBOSE=true; shift ;;
-    -d | --dry-run  )  PREFIX=echo; shift ;;
-    -- ) shift; break ;;
-  esac
+    case "$1" in
+        -h|--help )
+            usage
+            exit 0 ;;
+        -q|--quiet )
+            VERBOSE=false
+            ;;
+        -d|--dry-run )
+            DRY_RUN_PREFIX=echo
+            ;;
+        -s|--service )
+            STOP_SERVICE=true
+            ;;
+        -i|--interval )
+            shift
+            INTERVAL="$1"
+            ;;
+        -r|--retries )
+            shift
+            MAX_RETRIES="$1"
+            ;;
+        -c|--config-file )
+            shift
+            CONFIG_FILE="$1"
+            ;;
+        --)
+            shift
+            break ;;
+    esac
+    shift
 done
 
 main

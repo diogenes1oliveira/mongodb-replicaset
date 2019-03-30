@@ -1,0 +1,18 @@
+# Invokes a clean shutdown before stopping the mongod service
+
+[Unit]
+Description=Mongod clean shutdown hook
+After=mongod.service  # so it stops before
+BindsTo=mongod.service
+PartOf=mongod.service
+
+[Install]
+RequiredBy=mongod.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/
+ExecStop=/bin/sh -c "mongod-clean-shutdown"
+Restart=no
+RemainAfterExit=true
