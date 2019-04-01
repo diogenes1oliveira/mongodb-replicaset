@@ -27,3 +27,6 @@
 
 - name: Set up the services
   include_tasks: services.yml
+
+- name: Set up the permissions
+  include_tasks: permissions.yml

@@ -1,0 +1,76 @@
+---
+# main tasks file for the mongo-baking role
+
+- name: Copy the original settings from the remote host
+  slurp:
+    src: /etc/mongod.original.conf
+  register: conf_slurp
+
+- name: Check status of SELinux
+  shell: |
+    set -eo pipefail
+    sestatus | awk '{print $3}'
+  register: selinux_cmd
+  changed_when: false
+
+- name: Set up SELinux-related facts
+  set_fact:
+    original_conf: "{{ conf_slurp['content'] | b64decode | from_yaml }}"
+    selinux_enabled: "{{ 'enabled' in (selinux_cmd.stdout | trim) }}"
+
+- name: Load the permissions data for the root directories
+  set_fact:
+    permissions_data: "{{ lookup('template', './templates/permissions_data.yml') | from_yaml }}"
+
+- name: Assure the root directories exist
+  file:
+    name: "{{ item.path }}"
+    state: directory
+    owner: mongod
+    group: mongod
+    mode: 0755
+  with_items: "{{ permissions_data }}"
+
+- name: Set proper permissions for the root directories' contents
+  shell: |
+    set -eo pipefail
+    chown -cR mongod.mongod .
+    IFS='
+    '
+    for f in $(find . -type f); do
+      chmod -c {{ item.file_mode }} "$f"
+    done
+    for d in $(find . -type d); do
+      test "$d" == '.' || chmod -c {{ item.dir_mode }} "$d"
+    done
+  args:
+    chdir: "{{ item.path }}"
+    executable: /bin/bash
+  register: this
+  changed_when: >
+    'changed' in this.stdout
+  with_items: "{{ permissions_data }}"
+
+- debug:
+    var: selinux_cmd
+
+- debug:
+    var: selinux_enabled
+
+- name: Set the proper SELinux types for the directories
+  file:
+    name: "{{ item.path }}"
+    recurse: true
+    setype: "{{ item.se_type }}"
+    seuser: system_u
+    serole: object_r
+  when: selinux_enabled and item.changed
+  with_items: "{{ permissions_data }}"
+
+- name: Set the proper SELinux type for the no-auth TCP port
+  seport:
+    ports: "{{ tcp_port_no_auth }}"
+    proto: tcp
+    setype: mongod_port_t
+    state: present
+  when: tcp_port_no_auth != 27017
