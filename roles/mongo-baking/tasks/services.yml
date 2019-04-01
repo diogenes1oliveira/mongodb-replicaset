@@ -8,6 +8,11 @@
     owner: mongod
     group: mongod
 
+- name: Create the drop-ins directory
+  file:
+    state: directory
+    name: "/etc/systemd/system/mongod.service.d"
+
 - name: Copy the mongod config drop-ins
   template:
     src: "{{ item }}"
@@ -25,3 +30,10 @@
     enabled: true
     daemon_reload: true
   with_fileglob: "./files/services/*.service"
+
+- name: Assure mongod is running
+  systemd:
+    name: mongod
+    state: started
+    enabled: true
+    daemon_reload: true

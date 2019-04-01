@@ -99,3 +99,21 @@ def test_is_shutting_down_cleanly(host, ansible):
     assert host.file(pid_path).exists
     ansible('systemd', name='mongod', state='stopped')
     assert not host.file(pid_path).exists
+
+
+def test_can_start_cleanly(host, ansible):
+    ansible('systemd', name='mongod', state='stopped')
+    conf = host.file('/etc/mongod.conf').content_string
+    port = yaml_load(conf)['net']['port']
+
+    host.run_expect([0], 'sudo mongod-clean-startup')
+    host.run_expect([0], f" mongo --port {port} --eval 'quit()' ")
+
+    # idempotence
+    host.run_expect([0], 'sudo mongod-clean-startup')
+    host.run_expect([0], f" mongo --port {port} --eval 'quit()' ")
+
+    # started via systemctl
+    ansible('systemd', name='mongod', state='restarted')
+    host.run_expect([0], 'sudo mongod-clean-startup')
+    host.run_expect([0], f" mongo --port {port} --eval 'quit()' ")

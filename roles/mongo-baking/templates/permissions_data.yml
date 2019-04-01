@@ -8,8 +8,8 @@
     {{ original_conf.storage.dbPath != db_path }}
 
 - path: "{{ log_path }}"
-  dir_mode: '640'
-  file_mode: '640'
+  dir_mode: '600'
+  file_mode: '600'
   se_type: mongod_log_t
   changed: >
     {{ (original_conf.systemLog.path | dirname) != log_path }}

@@ -9,8 +9,7 @@ usage() {
 Cleanly shuts down a running mongod server.
 
 This script calls mongod --shutdown in the current database path, waits until
-it is actually down and then removes the lock files. Optionally, it can stop
-the mongod service as well.
+it is actually down and then removes the lock files.
 
 There must be a file with the configuration for the currently running server
 (default: /etc/mongod.current.conf). The mongod-save-current-config.conf systemd
@@ -24,7 +23,6 @@ Parameters:
     -q, --quiet         quiet mode
     -d, --dry-run       takes no action, only shows the commands that would
                         be executed
-    -s, --service       also shuts down the service
     -i, --interval      seconds to wait between retries (default: 1)
     -r, --retries       max number of retries (default: 3)
     -c, --config-file   path to the config file of the currently running mongod
@@ -40,7 +38,6 @@ show-info() {
 
 VERBOSE=true
 DRY_RUN_PREFIX=''
-STOP_SERVICE=false
 INTERVAL=1
 MAX_RETRIES=3
 CONFIG_FILE=/etc/mongod.current.conf
@@ -76,11 +73,6 @@ shutdown() {
 
     show-info 'Waiting for mongod to stop'
     wait-until-down
-
-    if [[ "$STOP_SERVICE" == true ]]; then
-        show-info 'Stopping the mongod service'
-        $DRY_RUN_PREFIX systemctl stop mongod
-    fi
 
     show-info 'Removing the lock files'
     $DRY_RUN_PREFIX rm --force $VERBOSE_FLAG \
@@ -119,8 +111,8 @@ wait-until-down() {
 }
 
 OPTS=$(getopt \
-    -o hqdr:i:sc: \
-    --long help,quiet,dry-run,retries:,interval:,service,config-file: \
+    -o hqdr:i:c: \
+    --long help,quiet,dry-run,retries:,interval:,config-file: \
     -- "$@")
 
 if [[ "$?" != 0 ]]; then
@@ -141,9 +133,6 @@ while true; do
             ;;
         -d|--dry-run )
             DRY_RUN_PREFIX=echo
-            ;;
-        -s|--service )
-            STOP_SERVICE=true
             ;;
         -i|--interval )
             shift

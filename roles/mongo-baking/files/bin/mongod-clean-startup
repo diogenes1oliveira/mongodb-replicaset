@@ -6,100 +6,135 @@ PROGRAM_NAME="$0"
 
 usage() {
   cat <<EOF
-Starts up the mongod service and wait for it to be up.
+Starts up the mongod service and wait for it to actually be up.
+
+The TCP port is loaded from the file /etc/mongod.conf or the one specified
+via the command line option -c.
+
 Usage:
-  $PROGRAM_NAME [-v|--verbose] [-d|--dry-run] [-r|--retries=<n>] [-i|--interval=<seconds>]
+  $PROGRAM_NAME [-q] [-d] [-r=<n>] [-i=<seconds>] [-c=<file>]
 
 Parameters:
-  -v, --verbose    verbose mode
-  -d, --dry-run    takes no action, only shows the commands that would be executed
-  -r, --retries    max number of retries (default: 3)
-  -i, --interval   seconds to wait between retries (default: 2)
-
-Environment variables:
-  MONGOD_PORT      port in which mongod is listening (default: as defined in /etc/mongod.conf or 27017)
+  -q, --quiet         quiet mode
+  -d, --dry-run       takes no action, only shows the commands that would
+                      be executed
+  -i, --interval      seconds to wait between retries (default: 2)
+  -r, --retries       max number of retries (default: 3)
+  -c, --config-file   path to the config file of the mongod server to be started
+                      up (default: /etc/mongod.conf)
 EOF
 }
 
-VERBOSE=false
-PREFIX=''
-RETRIES=3
-INTERVAL=2
+show-info() {
+    if [[ "$VERBOSE" == true ]]; then
+        echo '===== ' "$@" ' ===='
+    fi
+}
+
+VERBOSE=true
+DRY_RUN_PREFIX=''
+INTERVAL=1
+MAX_RETRIES=3
+CONFIG_FILE=/etc/mongod.conf
 
 main() {
-  get-port
-  start
-  wait-for-up
+    if [[ "$VERBOSE" == true ]]; then
+        VERBOSE_FLAG='--verbose'
+        QUIET_FLAG=''
+    else
+        VERBOSE_FLAG=''
+        QUIET_FLAG='--quiet'
+    fi
+
+    get-port
+
+    show-info 'Starting the mongod service'
+    $DRY_RUN_PREFIX systemctl start mongod
+
+    wait-for-up
 }
 
 get-port() {
-  if [[ -z "$MONGOD_PORT" ]]; then
-    if [[ -f "/etc/mongod.conf" ]]; then
-      MONGOD_PORT=`cat /etc/mongod.conf | yq -r '.net.port'`
+    if [[ -z "$DRY_RUN_PREFIX" ]]; then
+        PORT=''
+        echo 'PORT=$(cat' "$CONFIG_FILE" '|' yq -r '.net.port)'
+    elif [[ ! -f "$CONFIG_FILE" ]]; then
+        echo "Couldn't find $CONFIG_FILE" >&2
+        exit 1
     else
-      MONGOD_PORT="27017"
+        PORT=$(cat /etc/mongod.conf | yq -r '.net.port')
     fi
-  fi
 }
 
-start() {
-  if [[ "$VERBOSE" == true ]]; then
-    echo 'Starting the mongod service'
-    $PREFIX systemctl start mongod
-  else
-    $PREFIX systemctl start mongod
-  fi
+mongo-check() {
+    show-info 'Checking if mongod is up'
+    if [[ ! -z "$DRY_RUN_PREFIX" ]]; then
+        $DRY_RUN_PREFIX mongo --port '$PORT' --eval "'quit()'"
+    else
+        $DRY_RUN_PREFIX mongo --port "$PORT" --eval 'quit()'
+    fi
 }
 
 wait-for-up() {
-  if [[ "$VERBOSE" == true ]]; then
-    echo 'Waiting for mongod to be up'
-  fi
+    show-info 'Waiting for mongod to be up and about'
 
-  i=1
+    i=1
+    while ! mongo-check; do
+        i=$((i+1))
 
-  while ! $PREFIX mongo --port "$MONGOD_PORT" --eval "quit()"; do
-    i=$((i+1))
+        if [[ "$i" -gt "$MAX_RETRIES" ]]; then
+            echo "Max number of retries ($MAX_RETRIES) reached" >&2
+            exit 1
+        fi
 
-    if [[ "$i" -gt "$RETRIES" ]]; then
-      [[ "$VERBOSE" == false ]] || echo "Maximum retries reached" >&2
-      exit 1
-    fi
+        show-info "Couldn't connect. Retry #$i in $INTERVAL seconds..."
+        sleep "$INTERVAL"
+    done
 
-    [[ "$VERBOSE" == false ]] || echo "Couldn't connect. Retry #$i in $INTERVAL seconds..."
-    sleep "$INTERVAL"
-  done
-  
-  if [[ "$VERBOSE" == true ]]; then
-    echo 'mongod started successfully.'
-  fi
+    show-info 'Mongod started successfully'
 }
 
-if ! OPTS=`getopt -o dvri --long dry-run,verbose,retries,interval -- "$@"`; then
-  echo "Failed to parse args." >&2
-  usage >&2
-  exit 1
+OPTS=$(getopt \
+    -o hqdr:i:c: \
+    --long help,quiet,dry-run,retries:,interval:,config-file: \
+    -- "$@")
+
+if [[ "$?" != 0 ]]; then
+    echo "Failed to parse args." >&2
+    usage >&2
+    exit 1
 fi
 
 eval set -- "$OPTS"
 
 while true; do
-  case "$1" in
-    -h | --help     )  usage; exit 0; shift ;;
-    -v | --verbose  )  VERBOSE=true; shift ;;
-    -d | --dry-run  )  PREFIX=echo; shift ;;
-    -r | --retries  )
-      shift
-      RETRIES="$1"
-      shift
-      ;;
-    -i | --interval  )
-      shift
-      INTERVAL="$1"
-      shift
-      ;;
-    -- ) shift; break ;;
-  esac
+    case "$1" in
+        -h|--help )
+            usage
+            exit 0 ;;
+        -q|--quiet )
+            VERBOSE=false
+            ;;
+        -d|--dry-run )
+            DRY_RUN_PREFIX=echo
+            ;;
+        -i|--interval )
+            shift
+            INTERVAL="$1"
+            ;;
+        -r|--retries )
+            shift
+            MAX_RETRIES="$1"
+            ;;
+        -c|--config-file )
+            shift
+            CONFIG_FILE="$1"
+            ;;
+        --)
+            shift
+            break ;;
+    esac
+    shift
 done
 
 main
