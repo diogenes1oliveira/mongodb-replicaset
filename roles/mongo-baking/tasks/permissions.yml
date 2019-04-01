@@ -51,12 +51,6 @@
     'changed' in this.stdout
   with_items: "{{ permissions_data }}"
 
-- debug:
-    var: selinux_cmd
-
-- debug:
-    var: selinux_enabled
-
 - name: Set the proper SELinux types for the directories
   file:
     name: "{{ item.path }}"
