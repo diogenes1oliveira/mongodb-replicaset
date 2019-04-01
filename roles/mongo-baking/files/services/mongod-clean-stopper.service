@@ -2,7 +2,7 @@
 
 [Unit]
 Description=Mongod clean shutdown hook
-After=mongod.service  # so it stops before
+After=mongod.service
 BindsTo=mongod.service
 PartOf=mongod.service
 

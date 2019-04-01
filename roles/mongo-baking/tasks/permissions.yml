@@ -58,7 +58,7 @@
     setype: "{{ item.se_type }}"
     seuser: system_u
     serole: object_r
-  when: selinux_enabled and item.changed
+  when: selinux_enabled and item.changed  # noqa 503
   with_items: "{{ permissions_data }}"
 
 - name: Set the proper SELinux type for the no-auth TCP port
@@ -67,4 +67,4 @@
     proto: tcp
     setype: mongod_port_t
     state: present
-  when: tcp_port_no_auth != 27017
+  when: selinux_enabled and tcp_port_no_auth != 27017

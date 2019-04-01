@@ -8,6 +8,16 @@
     owner: mongod
     group: mongod
 
+- name: Copy the mongod config drop-ins
+  template:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/mongod.service.d/{{ item | basename | replace('.j2', '') }}"
+    mode: 0755
+    owner: mongod
+    group: mongod
+  with_fileglob:
+    - "./templates/services/mongod.service.d/*.conf"
+
 - name: Assure the services are enabled and running
   systemd:
     name: "{{ item | basename | replace('.service', '') }}"

@@ -6,21 +6,21 @@
 systemLog:
   destination: file
   logAppend: true
-  path: /var/log/mongodb/mongod.log
+  path: "{{ log_path }}/mongod.log"
 
 # Where and how to store data.
 storage:
-  dbPath: /var/lib/mongo
+  dbPath: "{{ db_path }}"
   journal:
     enabled: true
 
 # how the process runs
 processManagement:
   fork: true  # fork and run in background
-  pidFilePath: /var/run/mongodb/mongod.pid  # location of pidfile
+  pidFilePath: "{{ run_path }}/mongod.pid"
   timeZoneInfo: /usr/share/zoneinfo
 
 # network interfaces
 net:
   port: 27017
-  bindIp: 127.0.0.1  # Listen to local interface only, comment to listen on all interfaces.
+  bindIpAll: true

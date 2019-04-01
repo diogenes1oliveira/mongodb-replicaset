@@ -18,8 +18,8 @@
     creates: /etc/mongod.original.conf
 
 - name: Copy the initial configuration file
-  copy:
-    src: mongod.conf
+  template:
+    src: mongod.conf.j2
     dest: /etc/mongod.conf
     mode: 0644
     group: mongod
