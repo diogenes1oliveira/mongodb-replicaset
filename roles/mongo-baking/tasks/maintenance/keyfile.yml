@@ -1,0 +1,25 @@
+---
+- name: Generate a new keyfile
+  set_fact:
+    keyfile_content: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=700') }}"
+
+- name: Grab current keyfile
+  slurp:
+    src: "{{ config_path }}/replicaset.key"
+  register: current_keyfile
+  ignore_errors: true
+  run_once: true
+
+- name: Provide the keyfile contents as a fact for all hosts
+  set_fact:
+    keyfile_content: >
+      {{ current_keyfile.content | b64decode }}
+  when: current_keyfile is not failed
+
+- name: Copy it to all hosts
+  copy:
+    content: "{{ keyfile_content }}"
+    dest: "{{ config_path }}/replicaset.key"
+    owner: mongod
+    group: mongod
+    mode: 0400

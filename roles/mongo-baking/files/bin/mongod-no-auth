@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -eo pipefail
+
+usage() {
+  cat <<EOF
+Enables or disables the no-auth mode.
+
+The TCP port is loaded from the file /etc/mongod.conf or the one specified
+via the command line option -c.
+
+Usage:
+  $PROGRAM_NAME [-q] [-d] [-r=<n>] [-i=<seconds>] [-c=<file>]
+
+Parameters:
+  -q, --quiet         quiet mode
+  -d, --dry-run       takes no action, only shows the commands that would
+                      be executed
+  -i, --interval      seconds to wait between retries (default: 2)
+  -r, --retries       max number of retries (default: 3)
+  -c, --config-file   path to the config file of the mongod server to be started
+                      up (default: /etc/mongod.conf)
+EOF
+}
+
+show-info() {
+    if [[ "$VERBOSE" == true ]]; then
+        echo '===== ' "$@" ' ===='
+    fi
+}
+
+VERBOSE=true

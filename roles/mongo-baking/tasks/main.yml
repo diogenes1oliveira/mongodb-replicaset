@@ -26,7 +26,10 @@
     owner: mongod
 
 - name: Set up the permissions
-  include_tasks: permissions.yml
+  include_tasks: maintenance/permissions.yml
+
+- name: Set up the shared keyfile
+  include_tasks: maintenance/keyfile.yml
 
 - name: Set up the services
   include_tasks: services.yml

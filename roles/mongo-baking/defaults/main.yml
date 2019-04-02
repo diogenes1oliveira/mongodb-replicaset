@@ -2,4 +2,5 @@
 db_path: "/var/mongodb-rs/data"
 run_path: "/var/mongodb-rs/run"
 log_path: "/var/mongodb-rs/log"
+config_path: "/var/mongodb-rs/config"
 tcp_port_no_auth: 27020

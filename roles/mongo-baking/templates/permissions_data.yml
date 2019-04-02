@@ -20,3 +20,9 @@
   se_type: mongod_var_run_t
   changed: >
     {{ (original_conf.processManagement.pidFilePath | dirname) != run_path }}
+
+- path: "{{ config_path }}"
+  dir_mode: '500'
+  file_mode: '400'
+  se_type: mongod_var_lib_t
+  changed: true
