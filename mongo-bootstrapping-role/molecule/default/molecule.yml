@@ -1,21 +1,33 @@
 ---
 dependency:
   name: galaxy
+
 driver:
-  name: vagrant
-  provider:
-    name: virtualbox
+  name: docker
+
 lint:
   name: yamllint
+
 platforms:
-  - name: mongodb-baking-instance
-    box: centos/7
+  - name: mongodb-bootstrapping-instance
+    image: centos/systemd
+    command: /usr/sbin/init
+    privileged: true
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
 provisioner:
   name: ansible
   lint:
     name: ansible-lint
+
 scenario:
   name: default
+
 verifier:
   name: testinfra
   lint:

@@ -1,4 +1,4 @@
-molecule
+molecule[docker]
 ansible
 python-vagrant
 jmespath

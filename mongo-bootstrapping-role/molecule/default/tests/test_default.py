@@ -12,16 +12,16 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 
 
 @pytest.fixture(scope='module')
-def reboot(host):
-    host.ansible('reboot', {'reboot_timeout': 60}, check=False)
-
-
-@pytest.fixture(scope='module')
-def ansible(host):
+def ansibler(host):
     def call_ansible_module(module_name, check=False, become=True, **kwargs):
         return host.ansible(module_name, kwargs, check=check, become=True)
 
     return call_ansible_module
+
+
+@pytest.fixture(scope='module')
+def rebooter(host):
+    return lambda: host.run('sudo systemctl daemon-reexec')
 
 
 def test_package_versions(host):
@@ -32,7 +32,9 @@ def test_package_versions(host):
     assert 'pymongo' in pip_packages
 
 
-def test_thp_is_disabled(reboot, host):
+def test_thp_is_disabled(rebooter, host):
+    rebooter()
+
     paths = [
         '/sys/kernel/mm/transparent_hugepage/enabled',
         '/sys/kernel/mm/redhat_transparent_hugepage/enabled',
@@ -42,7 +44,8 @@ def test_thp_is_disabled(reboot, host):
         assert not file.exists or file.contains('[never]')
 
 
-def test_can_use_mongo(reboot, host):
+def test_can_use_mongo(rebooter, host):
+    rebooter()
     hash = str(uuid.uuid4())
 
     mongo_drop = "db.smoke_collection.drop()"
@@ -70,40 +73,40 @@ def config_saver_test(host):
     assert hash in conf
 
 
-def test_is_saving_config(host, ansible):
-    ansible('systemd', name='mongod', state='restarted')
+def test_is_saving_config(host, ansibler):
+    ansibler('systemd', name='mongod', state='restarted')
 
     with config_saver_test(host):
-        ansible('systemd', name='mongod', state='stopped')
-        ansible('systemd', name='mongod', state='started')
+        ansibler('systemd', name='mongod', state='stopped')
+        ansibler('systemd', name='mongod', state='started')
 
-    ansible('systemd', name='mongod', state='restarted')
-    ansible('systemd', name='mongod', state='stopped')
-
-    with config_saver_test(host):
-        ansible('systemd', name='mongod', state='started')
+    ansibler('systemd', name='mongod', state='restarted')
+    ansibler('systemd', name='mongod', state='stopped')
 
     with config_saver_test(host):
-        ansible('systemd', name='mongod', state='restarted')
+        ansibler('systemd', name='mongod', state='started')
+
+    with config_saver_test(host):
+        ansibler('systemd', name='mongod', state='restarted')
 
 
-def test_is_shutting_down_cleanly(host, ansible):
-    ansible('systemd', name='mongod', state='restarted')
+def test_is_shutting_down_cleanly(host, ansibler):
+    ansibler('systemd', name='mongod', state='restarted')
 
     conf = host.file('/etc/mongod.current.conf').content_string
     pid_path = yaml_load(conf)['processManagement']['pidFilePath']
 
-    ansible('systemd', name='mongod', state='stopped')
+    ansibler('systemd', name='mongod', state='stopped')
     assert not host.file(pid_path).exists
 
-    ansible('systemd', name='mongod', state='started')
+    ansibler('systemd', name='mongod', state='started')
     assert host.file(pid_path).exists
-    ansible('systemd', name='mongod', state='stopped')
+    ansibler('systemd', name='mongod', state='stopped')
     assert not host.file(pid_path).exists
 
 
-def test_can_start_cleanly(host, ansible):
-    ansible('systemd', name='mongod', state='stopped')
+def test_can_start_cleanly(host, ansibler):
+    ansibler('systemd', name='mongod', state='stopped')
     conf = host.file('/etc/mongod.conf').content_string
     port = yaml_load(conf)['net']['port']
 
@@ -115,6 +118,6 @@ def test_can_start_cleanly(host, ansible):
     host.run_expect([0], f" mongo --port {port} --eval 'quit()' ")
 
     # started via systemctl
-    ansible('systemd', name='mongod', state='restarted')
+    ansibler('systemd', name='mongod', state='restarted')
     host.run_expect([0], 'sudo mongod-clean-startup')
     host.run_expect([0], f" mongo --port {port} --eval 'quit()' ")

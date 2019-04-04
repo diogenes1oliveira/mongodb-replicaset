@@ -1,4 +1,6 @@
 ---
+ansible_become: false
+
 db_path: "/var/mongodb-rs/data"
 run_path: "/var/mongodb-rs/run"
 log_path: "/var/mongodb-rs/log"

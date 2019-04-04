@@ -1,5 +1,4 @@
 ---
-ansible_become: true
 
 root_cert_subject:
   - long: OrganizationalUnit
