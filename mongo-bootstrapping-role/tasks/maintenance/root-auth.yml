@@ -1,0 +1,72 @@
+---
+
+- name: Test if I can login with the root password
+  command: mongo
+  args:
+    stdin: |
+      use admin;
+      if(!db.auth('root', "{{ root_password }}")) {
+        throw new Error("Couldn't login with the given password");
+      }
+  no_log: true
+  changed_when: false
+  ignore_errors: true
+  register: mongo_login
+
+- name: Update the authentication data
+  when: mongo_login is failed
+  block:
+    - name: Stop mongod
+      systemd:
+        service: mongod
+        state: stopped
+
+    - name: Copy the no-auth config file
+      template:
+        src: mongod-no-auth.conf.j2
+        dest: /etc/mongod.conf
+        mode: 0644
+        group: mongod
+        owner: mongod
+
+    - name: Start mongod in the no-auth mode
+      command: mongod-clean-startup
+
+    - name: Create or update the root user data
+      mongodb_user:
+        database: admin
+        login_port: "{{ tcp_port_no_auth }}"
+        user: root
+        password: "{{ root_password }}"
+        roles:
+          - root
+        update_password: always
+        state: present
+      no_log: true
+
+    - name: Copy back the config file
+      template:
+        src: mongod.conf.j2
+        dest: /etc/mongod.conf
+        mode: 0644
+        group: mongod
+        owner: mongod
+
+    - name: Stop mongod
+      systemd:
+        service: mongod
+        state: stopped
+
+    - name: Start it back up in the normal mode
+      command: mongod-clean-startup
+
+    - name: Assure I can still login
+      command: mongo
+      args:
+        stdin: |
+          use admin;
+          if(!db.auth('root', "{{ root_password }}")) {
+            throw new Error("Couldn't login with the given password");
+          }
+      no_log: true
+      changed_when: false

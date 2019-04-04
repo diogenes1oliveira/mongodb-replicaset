@@ -49,9 +49,10 @@ def test_can_use_mongo(reboot, host):
     mongo_insert = f"db.smoke_collection.insertOne({{value: '{hash}'}})"
     mongo_query = "print(db.smoke_collection.findOne().value)"
 
-    host.run_test(f'mongo --quiet smoke_database --eval "{mongo_drop}"')
-    host.run_test(f'mongo --quiet smoke_database --eval "{mongo_insert}"')
-    cmd_query = f'mongo --quiet smoke_database --eval "{mongo_query}"'
+    mongo_auth = '-u root -p 12345678 --authenticationDatabase admin'
+    host.run_test(f'mongo {mongo_auth} smoke_database --eval "{mongo_drop}"')
+    host.run_test(f'mongo {mongo_auth} smoke_database --eval "{mongo_insert}"')
+    cmd_query = f'mongo {mongo_auth} smoke_database --eval "{mongo_query}"'
 
     assert hash in host.check_output(cmd_query)
 

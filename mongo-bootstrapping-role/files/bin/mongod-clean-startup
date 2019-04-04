@@ -8,8 +8,8 @@ usage() {
   cat <<EOF
 Starts up the mongod service and wait for it to actually be up.
 
-The TCP port is loaded from the file /etc/mongod.conf or the one specified
-via the command line option -c.
+The TCP port is loaded from the file /etc/mongod.current.conf or the one
+specified via the command line option -c.
 
 Usage:
   $PROGRAM_NAME [-q] [-d] [-r=<n>] [-i=<seconds>] [-c=<file>]
@@ -21,7 +21,7 @@ Parameters:
   -i, --interval      seconds to wait between retries (default: 2)
   -r, --retries       max number of retries (default: 3)
   -c, --config-file   path to the config file of the mongod server to be started
-                      up (default: /etc/mongod.conf)
+                      up (default: /etc/mongod.current.conf)
 EOF
 }
 
@@ -35,7 +35,7 @@ VERBOSE=true
 DRY_RUN_PREFIX=''
 INTERVAL=1
 MAX_RETRIES=3
-CONFIG_FILE=/etc/mongod.conf
+CONFIG_FILE=/etc/mongod.current.conf
 
 main() {
     if [[ "$VERBOSE" == true ]]; then
@@ -46,37 +46,43 @@ main() {
         QUIET_FLAG='--quiet'
     fi
 
-    get-port
-
     show-info 'Starting the mongod service'
     $DRY_RUN_PREFIX systemctl start mongod
+
+    get-port
 
     wait-for-up
 }
 
 get-port() {
-    if [[ -z "$DRY_RUN_PREFIX" ]]; then
+    if [[ -n "$DRY_RUN_PREFIX" ]]; then
         PORT=''
         echo 'PORT=$(cat' "$CONFIG_FILE" '|' yq -r '.net.port)'
-    elif [[ ! -f "$CONFIG_FILE" ]]; then
-        echo "Couldn't find $CONFIG_FILE" >&2
-        exit 1
     else
-        PORT=$(cat /etc/mongod.conf | yq -r '.net.port')
+        i=1
+        while [[ ! -f "$CONFIG_FILE" ]]; do
+            i=$((i+1))
+
+            if [[ "$i" -gt "$MAX_RETRIES" ]]; then
+                echo "Max number of retries ($MAX_RETRIES) reached" >&2
+                exit 1
+            fi
+
+            show-info "Couldn't find the config file. Retry #$i in $INTERVAL seconds..."
+            sleep "$INTERVAL"
+        done
+        PORT=$(cat "$CONFIG_FILE" | yq -r '.net.port')
     fi
 }
 
 mongo-check() {
-    show-info 'Checking if mongod is up'
-    if [[ ! -z "$DRY_RUN_PREFIX" ]]; then
-        $DRY_RUN_PREFIX mongo --port '$PORT' --eval "'quit()'"
-    else
-        $DRY_RUN_PREFIX mongo --port "$PORT" --eval 'quit()'
-    fi
+    show-info "Checking if mongod is up and listening on the port $PORT"
+    $DRY_RUN_PREFIX mongo --port "$PORT" --eval 'quit()'
 }
 
 wait-for-up() {
     show-info 'Waiting for mongod to be up and about'
+    sleep "$INTERVAL"
 
     i=1
     while ! mongo-check; do

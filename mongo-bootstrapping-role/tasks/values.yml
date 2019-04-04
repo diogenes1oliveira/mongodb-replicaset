@@ -1,0 +1,7 @@
+---
+
+- name: Assure necessary variables are properly set
+  assert:
+    that:
+      - root_password
+  no_log: true

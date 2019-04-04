@@ -1,0 +1,6 @@
+---
+- name: Converge
+  hosts: all
+  roles:
+    - role: mongo-bootstrapping-role
+      root_password: '12345678'
