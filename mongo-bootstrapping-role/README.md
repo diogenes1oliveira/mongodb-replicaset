@@ -32,27 +32,20 @@ Role Variables
   # force the generation and synchronization of the authentication files
   force_auth_update: false
 
-  admin_username: root
-  admin_password: null # needs to be passed explicitly
+  # password for the super user (required)
+  admin_password: null
+
   replica_set: rs0     # name for the replica set
-
-# vars/main.yml
-  # names of the groups for each role in the replica set
-  primary_group: 'primary'
-  secondary_group: 'secondary'
-  arbiter_group: 'arbiter'
-
-  # base path for MongoDB files
-  dbpath: '/var/mongodb-replicaset'
-
-  # port to bind to when in noauth mode
-  port_noauth: 27020
 ```
 
-db_path: "/var/mongodb-rs/data"
-run_path: "/var/mongodb-rs/run"
-log_path: "/var/mongodb-rs/log"
-config_path: "/var/mongodb-rs/config"
+```yaml
+# vars/main.yml
+  # names of the groups for each role in the replica set
+  data_group: 'data'
+  arbiter_group: 'arbiter'
+
+```
+
 
 How to use it
 -------------
@@ -61,7 +54,9 @@ Install and prepare Mongo in the instances:
 
     - hosts: servers
       roles:
-         - { role: 'mongo-baker', dbpath: '/usr/db' }
+        - role: 'mongo-bootstrapping-role'
+          admin_password: < YOUR ROOT PASSWORD HERE >
+
 
 License
 -------

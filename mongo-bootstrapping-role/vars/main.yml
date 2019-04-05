@@ -1,6 +1,1 @@
 ---
-
-root_cert_subject:
-  - long: OrganizationalUnit
-    short: OU
-    value: mongodb-replicaset
