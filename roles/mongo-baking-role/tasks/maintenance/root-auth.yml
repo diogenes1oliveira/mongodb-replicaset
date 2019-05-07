@@ -1,5 +1,4 @@
 ---
-
 - name: Test if I can login with the root password
   command: mongo
   args:
@@ -42,7 +41,6 @@
           - root
         update_password: always
         state: present
-      no_log: true
 
     - name: Copy back the config file
       template:

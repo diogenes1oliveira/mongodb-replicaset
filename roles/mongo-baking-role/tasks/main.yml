@@ -1,8 +1,11 @@
 ---
-# main tasks file for the mongo-baking role
+# main tasks file for the mongo-baking-role
 
-- name: Set and check a few values
-  include_tasks: values.yml
+- name: Assure root password has a value
+  assert:
+    that:
+      - root_password
+  no_log: true
 
 - name: Install the necessary packages
   include_tasks: packages.yml
@@ -28,14 +31,11 @@
     group: mongod
     owner: mongod
 
-- name: Set up the shared keyfile
-  include_tasks: maintenance/keyfile.yml
-
 - name: Set up the permissions
   include_tasks: maintenance/permissions.yml
 
 - name: Set up the services
   include_tasks: services.yml
 
-- name: Set up the users
+- name: Set up the root authentication
   include_tasks: maintenance/root-auth.yml

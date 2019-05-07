@@ -11,7 +11,7 @@ lint:
 platforms:
   - name: mongodb-bootstrapping-instance
     image: centos/systemd
-    command: /usr/sbin/init
+    override_command: false
     privileged: true
     capabilities:
       - SYS_ADMIN
@@ -24,6 +24,11 @@ provisioner:
   name: ansible
   lint:
     name: ansible-lint
+  options:
+    v: true
+  config_options:
+    defaults:
+      stdout_callback: debug
 
 scenario:
   name: default

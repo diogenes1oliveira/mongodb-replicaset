@@ -1,0 +1,3 @@
+---
+# Run commands as root
+ansible_become: true
