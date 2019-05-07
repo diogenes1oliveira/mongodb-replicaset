@@ -1,0 +1,16 @@
+{{ log_path }}/mongod.log {
+  daily
+  size {{ log_size }}
+  rotate 10
+  missingok
+  compress
+  delaycompress
+  dateext
+  dateformat -%Y-%m-%d
+  notifempty
+  create 640 mongod mongod
+  sharedscripts
+  postrotate
+    /bin/kill -SIGUSR1 `cat {{ run_path }}/mongod.pid 2>/dev/null` >/dev/null 2>&1
+  endscript
+}

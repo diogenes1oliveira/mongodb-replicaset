@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  roles:
+    - role: mongo-log-rotation-role
+      log_path: "/var/mongodb-rs/log"
+      run_path: "/var/mongodb-rs/run"
+      log_size: 1k

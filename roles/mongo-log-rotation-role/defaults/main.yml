@@ -1,0 +1,11 @@
+---
+## defaults file for mongo-log-rotation-role
+
+# Path to MongoDB log folder
+log_path: /var/log/mongodb
+
+# Path to MongoDB runtime folder
+pid_path: /var/run/mongodb
+
+# Maximum log file size
+log_size: 100M

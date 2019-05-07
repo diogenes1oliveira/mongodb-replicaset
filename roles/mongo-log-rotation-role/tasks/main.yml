@@ -1,0 +1,15 @@
+---
+# tasks file for mongo-log-rotation-role
+
+- name: Install the logrotate utility
+  yum:
+    name: logrotate
+    state: present
+
+- name: Create the config file
+  template:
+    src: mongo-log-rotate.conf.j2
+    dest: /etc/logrotate.d/mongod-log-rotate.conf
+    owner: root
+    group: root
+    mode: 0644

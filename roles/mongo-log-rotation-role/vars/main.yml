@@ -1,0 +1,5 @@
+---
+## vars file for mongo-log-rotation-role
+
+# Run the commands as root
+ansible_become: true
