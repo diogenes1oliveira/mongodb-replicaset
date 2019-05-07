@@ -1,5 +1,4 @@
 # mongodb-replicaset
 
-[![Build Status](https://travis-ci.org/diogenes1oliveira/mongodb-replicaset.svg?branch=master)](https://travis-ci.org/diogenes1oliveira/mongodb-replicaset)
-
-Deploys a highly available MongoDB replica set
+A set of Ansible scripts and Terraform modules to deploy a highly-available
+MongoDB replica set on AWS.
