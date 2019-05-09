@@ -1,0 +1,33 @@
+---
+- name: Assure the config directory exists
+  file:
+    name: "{{ config_path }}"
+    state: directory
+    owner: mongod
+    group: mongod
+    mode: 0755
+
+- name: Grab current keyfile, if it exists
+  slurp:
+    src: "{{ config_path }}/replicaset.key"
+  register: key_fetch
+  ignore_errors: true
+
+- name: Set the fetched key
+  set_fact:
+    fetched_key: "{{ key_fetch['content'] | b64decode }}"
+  when: key_fetch is not failed
+
+- name: Set the fetched key when failed
+  set_fact:
+    fetched_key: ""
+  when: key_fetch is failed
+
+- name: Copy it to all hosts
+  copy:
+    content: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=700') }}"
+    dest: "{{ config_path }}/replicaset.key"
+    owner: mongod
+    group: mongod
+    mode: 0400
+  when: not(hostvars.values() | map(attribute='fetched_key') | list | keyfiles_are_valid)

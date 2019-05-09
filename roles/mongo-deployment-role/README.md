@@ -18,6 +18,9 @@ default_root_password: "12345678"
 # Root user password. Will be changed from the default password during
 # the first deployment
 root_password: null
+
+# Path to the config directory
+config_path: "/var/mongodb-rs/config"
 ```
 
 ```yaml
