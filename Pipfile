@@ -8,6 +8,7 @@ molecule = {extras = ["docker"], version = "~=2.20"}
 jmespath = "~=0.9"
 pylint = "~=2.3"
 autopep8 = "~=1.4"
+pymongo = "~=3.8"
 
 [packages]
 ansible = "~=2.7"

@@ -22,3 +22,7 @@ pytestdebug.log
 
 # ignore environment variable files
 .envrc
+
+# ignore temporary directories
+var/
+tmp/

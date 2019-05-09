@@ -1,0 +1,40 @@
+---
+# tasks file for mongo-deployment-role
+
+- name: Set up the root password
+  no_log: true
+  block:
+    - name: Assure there is a root password and that it's different from the default
+      assert:
+        that:
+          - (root_password | d(False)) != default_root_password
+          - root_password | d(False)
+
+    - name: Try to login with default password
+      mongo_shell:
+        user: "{{ root_username }}"
+        password: "{{ default_root_password }}"
+        command: quit(0)
+      ignore_errors: True
+      changed_when: False
+      register: default_login
+
+    - name: Change the default password
+      when: default_login is not failed
+      mongodb_user:
+        database: admin
+        user: "{{ root_username }}"
+        login_user: "{{ root_username }}"
+        password: "{{ root_password }}"
+        login_password: "{{ default_root_password }}"
+        roles:
+          - root
+        update_password: always
+        state: present
+
+    - name: Assure I can still login
+      mongo_shell:
+        command: quit(0)
+        user: "{{ root_username }}"
+        password: "{{ root_password }}"
+      changed_when: False

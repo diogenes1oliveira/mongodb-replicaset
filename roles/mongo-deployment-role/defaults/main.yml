@@ -1,0 +1,10 @@
+---
+## defaults file for mongo-deployment-role
+
+# Default root password from the AMI. Will be used to login in the first
+# deployment.
+default_root_password: "12345678"
+
+# Root user password. Will be changed from the default password during
+# the first deployment
+root_password: null

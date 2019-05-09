@@ -1,0 +1,9 @@
+---
+- name: Prepare
+  hosts: all
+  roles:
+    - role: mongo-baking-role
+      root_password: "12345678"
+      db_path: "/var/mongodb-rs/data"
+      run_path: "/var/mongodb-rs/run"
+      log_path: "/var/mongodb-rs/log"

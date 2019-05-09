@@ -1,0 +1,8 @@
+---
+## vars file for mongo-deployment-role
+
+# Run the commands as root
+ansible_become: true
+
+# Username of the root user
+root_username: root

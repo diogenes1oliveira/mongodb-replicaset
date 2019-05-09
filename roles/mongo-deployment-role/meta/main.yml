@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: Diógenes Oliveira
+  description: Manages a MongoDB deployment
+
+  license: MIT
+
+  min_ansible_version: 2.4
+
+  platforms:
+    - name: CentOS
+      versions:
+        - "7"
+    - name: Amazon Linux
+      versions:
+        - "2"
+
+  galaxy_tags:
+    - AWS
+    - MongoDB
+    - Replica Set
+    - NoSQL
