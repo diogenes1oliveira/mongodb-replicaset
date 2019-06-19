@@ -1,6 +1,12 @@
 ---
 # tasks file for mongo-deployment-role
 
+- name: Assure mongod is up and about
+  systemd:
+    service: mongod
+    state: started
+    enabled: true
+
 - name: Set up the root password
   no_log: true
   include_tasks: root-auth.yml
@@ -8,3 +14,23 @@
 - name: Set up the keyfile
   no_log: true
   include_tasks: keyfile.yml
+  when: replica_set_name | d(False)
+  notify:
+    - Restart mongod
+
+- name: Deploy the configuration file
+  template:
+    src: mongod.conf.j2
+    dest: /etc/mongod.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - Restart mongod
+
+- name: Restart the service if necessary
+  meta: flush_handlers
+
+- name: Initialize the replica set
+  include_tasks: replica-set.yml
+  when: replica_set_name | d(False)

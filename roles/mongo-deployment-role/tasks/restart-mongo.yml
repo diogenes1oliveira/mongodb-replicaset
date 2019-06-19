@@ -1,0 +1,8 @@
+---
+- name: Shut mongod down
+  systemd:
+    service: mongod
+    state: stopped
+
+- name: Start mongod back up
+  command: mongod-clean-startup

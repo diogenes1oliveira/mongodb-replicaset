@@ -1,0 +1,6 @@
+[
+    {% for host in (groups[data_group] + groups[arbiter_group]) %}
+        {% set type = (host in groups[data_group]) | ternary('data', 'arbiter') %}
+        {"host": "{{ host }}", "type": "{{ type }}"}{% if not loop.last %} , {% endif %}
+    {% endfor %}
+]

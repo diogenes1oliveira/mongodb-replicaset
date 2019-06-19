@@ -6,3 +6,9 @@ ansible_become: true
 
 # Username of the root user
 root_username: root
+
+# Name of the data-bearing group
+data_group: data
+
+# Name of the arbiters group
+arbiter_group: arbiter

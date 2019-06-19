@@ -9,5 +9,18 @@ default_root_password: "12345678"
 # the first deployment
 root_password: null
 
+# Path to the data directory
+db_path: "/var/mongodb-rs/data"
+
+# Path to the runtime data directory
+run_path: "/var/mongodb-rs/run"
+
+# Path to the log directory
+log_path: "/var/mongodb-rs/log"
+
 # Path to the config directory
 config_path: "/var/mongodb-rs/config"
+
+# Name of the replica set to be deployed.
+# In case this is falsey (default), standalone instances are deployed.
+replica_set_name: null

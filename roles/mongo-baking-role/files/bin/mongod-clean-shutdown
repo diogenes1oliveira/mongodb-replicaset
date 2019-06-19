@@ -5,7 +5,7 @@ set -e
 PROGRAM_NAME="$0"
 
 usage() {
-    cat <<EOF
+  cat <<EOF
 Cleanly shuts down a running mongod server.
 
 This script calls mongod --shutdown in the current database path, waits until
@@ -17,23 +17,23 @@ add-in hooks up to mongod's initialization to save such file after the service
 successfully boots up.
 
 Usage:
-    $PROGRAM_NAME [-q] [-d] [-s] [-i=<seconds>] [-r<n>] [-c=<file>]
+  $PROGRAM_NAME [-q] [-d] [-s] [-i=<seconds>] [-r<n>] [-c=<file>]
 
 Parameters:
-    -q, --quiet         quiet mode
-    -d, --dry-run       takes no action, only shows the commands that would
-                        be executed
-    -i, --interval      seconds to wait between retries (default: 1)
-    -r, --retries       max number of retries (default: 3)
-    -c, --config-file   path to the config file of the currently running mongod
-                        server (default: /etc/mongod.current.conf)
+  -q, --quiet         quiet mode
+  -d, --dry-run       takes no action, only shows the commands that would
+                       be executed
+  -i, --interval      seconds to wait between retries (default: 1)
+  -r, --retries       max number of retries (default: 3)
+  -c, --config-file   path to the config file of the currently running mongod
+                       server (default: /etc/mongod.current.conf)
 EOF
 }
 
 show-info() {
-    if [[ "$VERBOSE" == true ]]; then
-        echo '===== ' "$@" ' ===='
-    fi
+  if [[ "$VERBOSE" == true ]]; then
+    echo '===== ' "$@" ' ===='
+  fi
 }
 
 VERBOSE=true
@@ -43,114 +43,114 @@ MAX_RETRIES=3
 CONFIG_FILE=/etc/mongod.current.conf
 
 main() {
-    if [[ ! -f "$CONFIG_FILE" ]] && [[ -z "$DRY_RUN_PREFIX" ]]; then
-        echo "Couldn't find $CONFIG_FILE" >&2
-        exit 1
-    fi
+  if [[ ! -f "$CONFIG_FILE" ]] && [[ -z "$DRY_RUN_PREFIX" ]]; then
+    echo "Couldn't find $CONFIG_FILE" >&2
+    exit 1
+  fi
 
-    if [[ "$VERBOSE" == true ]]; then
-        VERBOSE_FLAG='--verbose'
-        QUIET_FLAG=''
-    else
-        VERBOSE_FLAG=''
-        QUIET_FLAG='--quiet'
-    fi
+  if [[ "$VERBOSE" == true ]]; then
+    VERBOSE_FLAG='--verbose'
+    QUIET_FLAG=''
+  else
+    VERBOSE_FLAG=''
+    QUIET_FLAG='--quiet'
+  fi
 
-    get-var-values
-    shutdown
+  get-var-values
+  shutdown
 }
 
 get-var-values() {
-    DATA_PATH=$(cat "${CONFIG_FILE}" | yq -r '.storage.dbPath')
-    PID_PATH=$(cat "${CONFIG_FILE}" | yq -r '.processManagement.pidFilePath')
-    PORT=$(cat "${CONFIG_FILE}" | yq -r '.net.port')
+  DATA_PATH=$(cat "${CONFIG_FILE}" | yq -r '.storage.dbPath')
+  PID_PATH=$(cat "${CONFIG_FILE}" | yq -r '.processManagement.pidFilePath')
+  PORT=$(cat "${CONFIG_FILE}" | yq -r '.net.port')
 }
 
 shutdown() {
-    show-info 'Sending the shutdown command to the mongod server'
-    $DRY_RUN_PREFIX mongod $QUIET_FLAG --shutdown --dbpath "$DATA_PATH" || \
-        show-info 'The shutdown command has failed'
+  show-info 'Sending the shutdown command to the mongod server'
+  $DRY_RUN_PREFIX mongod $QUIET_FLAG --shutdown --dbpath "$DATA_PATH" || \
+    show-info 'The shutdown command has failed'
 
-    show-info 'Waiting for mongod to stop'
-    wait-until-down
+  show-info 'Waiting for mongod to stop'
+  wait-until-down
 
-    show-info 'Removing the lock files'
-    $DRY_RUN_PREFIX rm --force $VERBOSE_FLAG \
-        "$DATA_PATH/mongod.lock" \
-        "$DATA_PATH/WiredTiger.lock" \
-        "$PID_PATH"
+  show-info 'Removing the lock files'
+  $DRY_RUN_PREFIX rm --force $VERBOSE_FLAG \
+    "$DATA_PATH/mongod.lock" \
+    "$DATA_PATH/WiredTiger.lock" \
+    "$PID_PATH"
 
 }
 
 mongo-check() {
-    show-info 'Checking if mongod is up'
-    if [[ ! -z "$DRY_RUN_PREFIX" ]]; then
-        $DRY_RUN_PREFIX mongo --port "$PORT" --eval "'quit()'"
-        return 1
-    else
-        $DRY_RUN_PREFIX mongo --port "$PORT" --eval 'quit()'
-    fi
+  show-info 'Checking if mongod is up'
+  if [[ ! -z "$DRY_RUN_PREFIX" ]]; then
+    $DRY_RUN_PREFIX mongo --port "$PORT" --eval "'quit()'"
+    return 1
+  else
+    $DRY_RUN_PREFIX mongo --port "$PORT" --eval 'quit()'
+  fi
 }
 
 wait-until-down() {
-    i=0
+  i=0
 
-    while mongo-check; do
-        show-info "mongod is still up," \
-            "checking again in $INTERVAL second(s)..."
-        i=$((i+1))
+  while mongo-check; do
+    show-info "mongod is still up," \
+      "checking again in $INTERVAL second(s)..."
+    i=$((i+1))
 
-        if [[ "$i" -gt "$MAX_RETRIES" ]]; then
-            echo "Couldn't shut mongod down after" \
-                "$i retries. Quitting" >&2
-            exit 1
-        fi
+    if [[ "$i" -gt "$MAX_RETRIES" ]]; then
+      echo "Couldn't shut mongod down after" \
+        "$i retries. Quitting" >&2
+      exit 1
+    fi
 
-        sleep "$INTERVAL"
-    done
+    sleep "$INTERVAL"
+  done
 }
 
 OPTS=$(getopt \
-    -o hqdr:i:c: \
-    --long help,quiet,dry-run,retries:,interval:,config-file: \
-    -- "$@")
+  -o hqdr:i:c: \
+  --long help,quiet,dry-run,retries:,interval:,config-file: \
+  -- "$@")
 
 if [[ "$?" != 0 ]]; then
-    echo "Failed to parse args." >&2
-    usage >&2
-    exit 1
+  echo "Failed to parse args." >&2
+  usage >&2
+  exit 1
 fi
 
 eval set -- "$OPTS"
 
 while true; do
-    case "$1" in
-        -h|--help )
-            usage
-            exit 0 ;;
-        -q|--quiet )
-            VERBOSE=false
-            ;;
-        -d|--dry-run )
-            DRY_RUN_PREFIX=echo
-            ;;
-        -i|--interval )
-            shift
-            INTERVAL="$1"
-            ;;
-        -r|--retries )
-            shift
-            MAX_RETRIES="$1"
-            ;;
-        -c|--config-file )
-            shift
-            CONFIG_FILE="$1"
-            ;;
-        --)
-            shift
-            break ;;
-    esac
-    shift
+  case "$1" in
+    -h|--help )
+      usage
+      exit 0 ;;
+    -q|--quiet )
+      VERBOSE=false
+      ;;
+    -d|--dry-run )
+      DRY_RUN_PREFIX=echo
+      ;;
+    -i|--interval )
+      shift
+      INTERVAL="$1"
+      ;;
+    -r|--retries )
+      shift
+      MAX_RETRIES="$1"
+      ;;
+    -c|--config-file )
+      shift
+      CONFIG_FILE="$1"
+      ;;
+    --)
+      shift
+      break ;;
+  esac
+  shift
 done
 
 main

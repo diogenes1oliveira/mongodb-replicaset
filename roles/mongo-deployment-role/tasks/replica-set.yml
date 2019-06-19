@@ -1,0 +1,36 @@
+---
+- name: Grab the initialization status of each node
+  stat:
+    path: "{{ config_path }}/replica-set-document"
+  register: initialization_file
+
+- name: Build the initialization document
+  set_fact:
+    initialization_document:
+      _id: "{{ replica_set_name }}"
+      version: 1,
+      members: >
+        {{(
+          groups | replica_set_members(data_group, arbiter_group)
+        )}}
+
+- name: Initialize the replica set
+  when: >
+    data_group in groups and (hostvars | needs_to_initialize(groups[data_group]))
+  run_once: true
+  mongo_shell:
+    password: "{{ root_password }}"
+    command: |
+      var result = rs.initiate({{ initialization_document | to_json }});
+      if(!result) {
+        throw new Error("Failed to initialize the replica set")
+      }
+
+- name: Confirm the configuration
+  where: initialization is not failed
+  copy:
+    content: "{{ initialization_document | to_json }}"
+    dest: "{{ config_path }}/replica-set-document"
+    owner: mongod
+    group: mongod
+    mode: 0644

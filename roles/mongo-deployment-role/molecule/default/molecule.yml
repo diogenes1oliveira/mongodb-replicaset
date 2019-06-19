@@ -9,7 +9,38 @@ lint:
   name: yamllint
 
 platforms:
-  - name: mongodb-deployment-instance
+  - name: mongodb-deployment-data0-instance
+    groups: [data]
+    networks:
+      - name: mongodb-deployment
+    image: centos/systemd
+    override_command: false
+    privileged: true
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: mongodb-deployment-data1-instance
+    groups: [data]
+    networks:
+      - name: mongodb-deployment
+    image: centos/systemd
+    override_command: false
+    privileged: true
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: mongodb-deployment-arbiter-instance
+    groups: [arbiter]
+    networks:
+      - name: mongodb-deployment
     image: centos/systemd
     override_command: false
     privileged: true

@@ -4,3 +4,4 @@
   roles:
     - role: mongo-deployment-role
       root_password: root-password
+      replica_set_name: rs0

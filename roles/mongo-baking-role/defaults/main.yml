@@ -14,9 +14,5 @@ config_path: "/var/mongodb-rs/config"
 # TCP port to bind to when in no-auth mode
 tcp_port_no_auth: 27020
 
-# Name of the replica set to be deployed.
-# In case this is falsey (default), standalone instances are deployed.
-replica_set_name: null
-
 # Sample password to be baked into the AMI (required).
 root_password: null

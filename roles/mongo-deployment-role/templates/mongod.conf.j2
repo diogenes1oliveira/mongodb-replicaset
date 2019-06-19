@@ -1,0 +1,39 @@
+# mongod.conf
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: "{{ log_path }}/mongod.log"
+  logRotate: reopen
+
+# Where and how to store data.
+storage:
+  dbPath: "{{ db_path }}"
+  journal:
+    enabled: true
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+  pidFilePath: "{{ run_path }}/mongod.pid"
+  timeZoneInfo: /usr/share/zoneinfo
+
+# network interfaces
+net:
+  port: 27017
+  bindIpAll: true
+
+security:
+  authorization: enabled
+
+{% if replica_set_name %}
+
+replication:
+  replSetName: "{{ replica_set_name }}"
+
+{% endif %}
+
+# generated in {{ template_run_date }}

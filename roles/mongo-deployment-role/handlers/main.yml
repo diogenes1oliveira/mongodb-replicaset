@@ -1,2 +1,4 @@
 ---
 # handlers file for mongo-deployment-role
+- name: Restart mongod
+  include_tasks: restart-mongo.yml
